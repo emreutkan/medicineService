@@ -83,7 +83,7 @@ app.get('/health', (req, res) => {
 });
 
 // 6) Start server
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`[DEBUG] Medicine Service (NoSQL) listening on port ${PORT}`);
 });
