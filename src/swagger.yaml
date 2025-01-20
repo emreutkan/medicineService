@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  title: Medicine API
+  version: 1.0.0
+  description: API for managing and searching medicines.
+servers:
+  - url: https://medicineservice-b3gcczakghhrfjc2.canadacentral-01.azurewebsites.net/v1
+    description: Local development server
+paths:
+  /medicine/search:
+    get:
+      summary: Search medicines by brand name
+      description: Search for medicines using a partial match on the brand name.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Partial brand name of the medicine to search.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of matching medicines.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  medicationNames:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        brandName:
+                          type: string
+                          description: The brand name of the medicine.
+                        barcode:
+                          type: string
+                          description: The barcode of the medicine.
+                        atcCode:
+                          type: string
+                          description: ATC code of the medicine.
+                        atcName:
+                          type: string
+                          description: ATC name of the medicine.
+                        companyName:
+                          type: string
+                          description: The name of the manufacturer.
+                        prescriptionType:
+                          type: string
+                          description: The prescription type (e.g., OTC, Prescription).
+                        status:
+                          type: string
+                          description: The availability status of the medicine.
+                        description:
+                          type: string
+                          description: Additional description of the medicine.
+        '400':
+          description: Missing or invalid query parameter.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /medicine/refresh:
+    post:
+      summary: Refresh medicine data
+      description: Refresh the list of medicines by downloading and parsing the latest Excel file from the TİTCK website.
+      responses:
+        '200':
+          description: Medicines successfully refreshed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
