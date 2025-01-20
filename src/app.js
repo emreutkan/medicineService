@@ -43,8 +43,6 @@ mongoose.connect(process.env.MONGO_URI).then(async () => {
     // 3) Run the refresh
     await refreshMedicines();
 
-    // 4) Close out
-    process.exit(0);
 }).catch((err) => {
     console.error('[ERROR] MongoDB connection failed:', err);
 });
@@ -82,11 +80,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'Medicine Service running (NoSQL)' });
 });
 
-// 6) Start server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-    console.log(`[DEBUG] Medicine Service (NoSQL) listening on port ${PORT}`);
-});
+
 
 // Debug: Catch unhandled routes
 app.use((req, res, next) => {
@@ -94,4 +88,12 @@ app.use((req, res, next) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
+// 6) Start server
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+    console.log(`[DEBUG] Medicine Service (NoSQL) listening on port ${PORT}`);
+});
+
 module.exports = app;
+
