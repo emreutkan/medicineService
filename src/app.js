@@ -12,7 +12,9 @@ const yaml = require('yamljs');
 const path = require('path');
 
 const app = express();
-
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
 // Debug: Log incoming requests
 app.use((req, res, next) => {
     console.log(`[DEBUG] Incoming Request: ${req.method} ${req.url}`);
@@ -37,12 +39,17 @@ const swaggerDocument = yaml.load(path.join(__dirname, 'swagger.yaml'));
 console.log(`[DEBUG] Swagger YAML Loaded`);
 
 // 2) Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI).then(async () => {
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+}).then(async () => {
     console.log('[DEBUG] Connected to Mongo!');
-
-    // 3) Run the refresh
-    await refreshMedicines();
-
+    try {
+        await refreshMedicines();
+    } catch (err) {
+        console.error('[ERROR] Failed to refresh medicines:', err);
+    }
 }).catch((err) => {
     console.error('[ERROR] MongoDB connection failed:', err);
 });
@@ -75,11 +82,42 @@ app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 console.log(`[DEBUG] Swagger UI serving at '/'`);
 
 // Health-check endpoint
-app.get('/health', (req, res) => {
-    console.log(`[DEBUG] Health check endpoint called`);
-    res.json({ status: 'Medicine Service running (NoSQL)' });
-});
+app.get('/health', async (req, res) => {
+    const health = {
+        status: 'UP',
+        timestamp: new Date(),
+        checks: {
+            database: 'UNKNOWN',
+            redis: 'UNKNOWN'
+        }
+    };
 
+    try {
+        // Check MongoDB connection
+        if (mongoose.connection.readyState === 1) {
+            health.checks.database = 'UP';
+        } else {
+            health.checks.database = 'DOWN';
+            health.status = 'DOWN';
+        }
+
+        // Check Redis if configured
+        if (app.locals.redisClient) {
+            try {
+                await app.locals.redisClient.ping();
+                health.checks.redis = 'UP';
+            } catch (e) {
+                health.checks.redis = 'DOWN';
+                health.status = 'DOWN';
+            }
+        }
+
+        res.status(health.status === 'UP' ? 200 : 503).json(health);
+    } catch (e) {
+        health.status = 'DOWN';
+        res.status(503).json(health);
+    }
+});
 
 
 // Debug: Catch unhandled routes
