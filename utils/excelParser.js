@@ -1,6 +1,24 @@
 // utils/excelParser.js
 const ExcelJS = require('exceljs');
 
+/**
+ * Helper function to extract text from a cell value.
+ * If the cell contains an object (e.g., with text and hyperlink), return the text.
+ * If it's a string, return it as is.
+ * Otherwise, return null.
+ *
+ * @param {any} cellValue - The value of the Excel cell.
+ * @returns {string|null} - Extracted text or null.
+ */
+function extractText(cellValue) {
+    if (typeof cellValue === 'string') {
+        return cellValue;
+    } else if (typeof cellValue === 'object' && cellValue !== null) {
+        return cellValue.text || null;
+    }
+    return null;
+}
+
 async function parseMedicineExcel(filePath) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
@@ -12,14 +30,16 @@ async function parseMedicineExcel(filePath) {
         // Skip the first three rows (metadata and headers)
         if (rowNumber <= 3) return;
 
-        const brandName = row.getCell(1).value;
-        const barcode = row.getCell(2).value || null;
-        const atcCode = row.getCell(3).value || null;
-        const atcName = row.getCell(4).value || null;
-        const companyName = row.getCell(5).value || null;
-        const prescriptionType = row.getCell(6).value || null;
-        const status = row.getCell(7).value || null;
-        const description = row.getCell(8).value || null;
+        const brandName = extractText(row.getCell(1).value);
+        const barcode = extractText(row.getCell(2).value);
+        const atcCode = extractText(row.getCell(3).value);
+        const atcName = extractText(row.getCell(4).value);
+        const companyName = extractText(row.getCell(5).value);
+        const prescriptionType = extractText(row.getCell(6).value);
+        const status = extractText(row.getCell(7).value);
+        const description = extractText(row.getCell(8).value);
+
+        // For numeric fields, ensure they are numbers
         const basicMedicineList = parseInt(row.getCell(9).value, 10) || 0;
         const childMedicineList = parseInt(row.getCell(10).value, 10) || 0;
         const newbornMedicineList = parseInt(row.getCell(11).value, 10) || 0;
@@ -63,7 +83,6 @@ async function parseMedicineExcel(filePath) {
             });
         }
     });
-
 
     return medicines;
 }

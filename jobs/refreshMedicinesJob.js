@@ -1,5 +1,5 @@
 // jobs/refreshMedicinesJob.js
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 
@@ -17,20 +17,48 @@ async function refreshMedicines() {
         console.log('Found the newest XLSX link:', latestUrl);
 
         // 2) Download the XLSX to a temp file
-        const tempFilePath = path.join(__dirname, 'latest-medicines.xlsx');
-        const response = await axios.get(latestUrl, { responseType: 'arraybuffer' });
-        fs.writeFileSync(tempFilePath, response.data);
+        const tempDir = path.join(__dirname, '..', 'temp');
+        try {
+            await fs.mkdir(tempDir, { recursive: true });
+            console.log('Ensured temp directory exists:', tempDir);
+        } catch (dirErr) {
+            throw new Error(`Failed to create temp directory: ${dirErr.message}`);
+        }
+
+        const tempFilePath = path.join(tempDir, 'latest-medicines.xlsx');
+
+        try {
+            const response = await axios.get(latestUrl, { responseType: 'arraybuffer' });
+            await fs.writeFile(tempFilePath, response.data);
+            console.log('Downloaded XLSX to temp file:', tempFilePath);
+        } catch (downloadErr) {
+            throw new Error(`Failed to download XLSX file: ${downloadErr.message}`);
+        }
 
         // 3) Parse the XLSX
-        const medicines = await parseMedicineExcel(tempFilePath);
+        let medicines;
+        try {
+            medicines = await parseMedicineExcel(tempFilePath);
+            console.log('Parsed medicines:', medicines.length);
+        } catch (parseErr) {
+            throw new Error(`Failed to parse XLSX file: ${parseErr.message}`);
+        }
 
         // 4) Upsert into DB
-        await upsertMedicines(medicines);
-        console.log(`Refreshed ${medicines.length} medicines from the XLSX.`);
+        try {
+            await upsertMedicines(medicines);
+            console.log(`Refreshed ${medicines.length} medicines from the XLSX.`);
+        } catch (upsertErr) {
+            throw new Error(`Failed to upsert medicines: ${upsertErr.message}`);
+        }
 
         // 5) Cleanup
-        fs.unlinkSync(tempFilePath);
-        console.log('Done temp XLSX file removed.');
+        try {
+            await fs.unlink(tempFilePath);
+            console.log('Removed temp XLSX file:', tempFilePath);
+        } catch (cleanupErr) {
+            console.warn(`Failed to remove temp file: ${cleanupErr.message}`);
+        }
 
     } catch (err) {
         console.error('Error refreshing medicines:', err);
@@ -38,4 +66,3 @@ async function refreshMedicines() {
 }
 
 module.exports = { refreshMedicines };
-

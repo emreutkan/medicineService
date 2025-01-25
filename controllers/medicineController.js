@@ -20,23 +20,27 @@ exports.searchMedicine = async (req, res) => {
             if (cachedResult) {
                 return res.json({ medicationNames: JSON.parse(cachedResult) });
             }
+        } else {
         }
-        else {
-            console.log('[DEBUG] Redis is not initialized, skipping cache check.');
-        }
-
 
         // 2) Search in Mongo
         const results = await searchMedicines(query);
 
-        // 3) Store in cache
+        // 3) Extract only the brandName and convert to uppercase
+        const medicationNames = results
+            .map(med => med.brandName) // Extract brandName
+            .filter(name => typeof name === 'string') // Ensure it's a string
+            .map(name => name.toUpperCase()); // Convert to uppercase
+
+
+        // 4) Store in cache
         if (redisClient) {
-            await redisClient.set(cacheKey, JSON.stringify(results), {
+            await redisClient.set(cacheKey, JSON.stringify(medicationNames), {
                 EX: 60 * 60 // expire in 1 hour
             });
         }
 
-        return res.json({ medicationNames: results });
+        return res.json({ medicationNames });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ error: 'Internal server error' });
