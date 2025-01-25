@@ -4,10 +4,10 @@ info:
   version: 1.0.0
   description: API for managing and searching medicines.
 servers:
-  - url: https://medicineservice-b3gcczakghhrfjc2.canadacentral-01.azurewebsites.net/v1
+  - url: http://localhost:8080/v1
     description: Local development server
 paths:
-  /medicine/search:
+  /search:
     get:
       summary: Search medicines by brand name
       description: Search for medicines using a partial match on the brand name.
