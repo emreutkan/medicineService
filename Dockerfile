@@ -10,4 +10,6 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["node", "/index.js"]
+CMD ["node", "index.js"]
+
+# docker run --env-file .env -p 8080:8080 medicine-app
