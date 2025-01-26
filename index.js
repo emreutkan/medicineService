@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const medicineRoutes = require('./routes/medicineRoutes');
-const redis = require('redis');
 const { refreshMedicines } = require("./jobs/refreshMedicinesJob");
 const swaggerUi = require('swagger-ui-express');
 const yaml = require('yamljs');
@@ -54,19 +53,21 @@ mongoose.connect(process.env.MONGO_URI, {
     console.error('[ERROR] MongoDB connection failed:', err);
 });
 
-// 3) Redis setup
+const redis = require('redis');
+
 let redisClient;
-if (process.env.REDIS_HOST) {
-    console.log(`[DEBUG] Connecting to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`);
+if (process.env.REDIS_URL) {
+    console.log(`[DEBUG] Connecting to Redis at ${process.env.REDIS_URL}`);
     redisClient = redis.createClient({
-        url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`,
+        url: process.env.REDIS_URL,
     });
     redisClient.connect().catch(console.error);
+
     redisClient.on('error', (err) => {
         console.error('[ERROR] Redis connection error:', err);
     });
 }
-app.locals.redisClient = redisClient; // Attach to app.locals
+app.locals.redisClient = redisClient;
 
 // 4) Routes
 app.use('/v1', medicineRoutes);
