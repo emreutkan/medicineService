@@ -79,9 +79,6 @@ app.use('/v1', (req, res, next) => {
 });
 
 // 5) Swagger UI
-app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-console.log(`[DEBUG] Swagger UI serving at '/'`);
-
 // Health-check endpoint
 app.get('/health', async (req, res) => {
     const health = {
@@ -119,6 +116,10 @@ app.get('/health', async (req, res) => {
         res.status(503).json(health);
     }
 });
+
+console.log(`[DEBUG] Swagger UI serving at '/'`);
+app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
 
 // Debug: Catch unhandled routes
