@@ -65,6 +65,8 @@ async function upsertMedicines(medicines) {
     }
 }
 
+
+
 module.exports = {
     searchMedicines,
     upsertMedicines

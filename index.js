@@ -71,7 +71,6 @@ app.locals.redisClient = redisClient;
 
 // 4) Routes
 app.use('/v1', medicineRoutes);
-
 // Debug: Log when a route is called
 app.use('/v1', (req, res, next) => {
     console.log(`[DEBUG] /v1/medicine route hit: ${req.method} ${req.url}`);

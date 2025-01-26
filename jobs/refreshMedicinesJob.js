@@ -1,4 +1,3 @@
-// jobs/refreshMedicinesJob.js
 const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
@@ -7,61 +6,45 @@ const { parseMedicineExcel } = require('../utils/excelParser');   // Excel parsi
 const { upsertMedicines } = require('../models/medicineModel');   // DB upsert
 const { getLatestXlsxLink } = require('../utils/getXlsx');        // The scraper
 
-async function refreshMedicines() {
+async function refreshMedicines(req, res) {
     try {
         // 1) Get the LATEST XLSX link by scraping TİTCK
         const latestUrl = await getLatestXlsxLink();
         if (!latestUrl) {
-            throw new Error('Could not find a valid XLSX link!');
+            return res.status(404).json({ success: false, message: 'Could not find a valid XLSX link!' });
         }
         console.log('Found the newest XLSX link:', latestUrl);
 
         // 2) Download the XLSX to a temp file
         const tempDir = path.join(__dirname, '..', 'temp');
-        try {
-            await fs.mkdir(tempDir, { recursive: true });
-            console.log('Ensured temp directory exists:', tempDir);
-        } catch (dirErr) {
-            throw new Error(`Failed to create temp directory: ${dirErr.message}`);
-        }
+        await fs.mkdir(tempDir, { recursive: true });
+        console.log('Ensured temp directory exists:', tempDir);
 
         const tempFilePath = path.join(tempDir, 'latest-medicines.xlsx');
-
-        try {
-            const response = await axios.get(latestUrl, { responseType: 'arraybuffer' });
-            await fs.writeFile(tempFilePath, response.data);
-            console.log('Downloaded XLSX to temp file:', tempFilePath);
-        } catch (downloadErr) {
-            throw new Error(`Failed to download XLSX file: ${downloadErr.message}`);
-        }
+        const response = await axios.get(latestUrl, { responseType: 'arraybuffer' });
+        await fs.writeFile(tempFilePath, response.data);
+        console.log('Downloaded XLSX to temp file:', tempFilePath);
 
         // 3) Parse the XLSX
-        let medicines;
-        try {
-            medicines = await parseMedicineExcel(tempFilePath);
-            console.log('Parsed medicines:', medicines.length);
-        } catch (parseErr) {
-            throw new Error(`Failed to parse XLSX file: ${parseErr.message}`);
-        }
+        const medicines = await parseMedicineExcel(tempFilePath);
+        console.log('Parsed medicines:', medicines.length);
 
         // 4) Upsert into DB
-        try {
-            await upsertMedicines(medicines);
-            console.log(`Refreshed ${medicines.length} medicines from the XLSX.`);
-        } catch (upsertErr) {
-            throw new Error(`Failed to upsert medicines: ${upsertErr.message}`);
-        }
+        await upsertMedicines(medicines);
+        console.log(`Refreshed ${medicines.length} medicines from the XLSX.`);
 
         // 5) Cleanup
-        try {
-            await fs.unlink(tempFilePath);
-            console.log('Removed temp XLSX file:', tempFilePath);
-        } catch (cleanupErr) {
-            console.warn(`Failed to remove temp file: ${cleanupErr.message}`);
-        }
+        await fs.unlink(tempFilePath);
+        console.log('Removed temp XLSX file:', tempFilePath);
+
+        // Success response
+        return res.status(200).json({ success: true, message: 'Medicines refreshed successfully!' });
 
     } catch (err) {
-        console.error('Error refreshing medicines:', err);
+        console.error('Error refreshing medicines:', err.message);
+
+        // Failure response
+        return res.status(500).json({ success: false, message: 'Failed to refresh medicines!', error: err.message });
     }
 }
 
