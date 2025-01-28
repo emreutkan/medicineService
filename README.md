@@ -27,4 +27,4 @@ https://medicineservice-b3gcczakghhrfjc2.canadacentral-01.azurewebsites.net/
 - CORS enabled for cross-origin requests
 
 ---
-Last updated: 2025-01-20 by @emreutkan
+![image](https://github.com/user-attachments/assets/98809380-12af-4f00-bc33-e7e7d65ff331)
